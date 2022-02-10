@@ -15,6 +15,20 @@ async Task StartEventGenerating()
 
     await using (var producer = new EventHubProducerClient(connectionString, eventHubName))
     {
-       
+        while (true)
+        {
+            using (var eventBatch = await producer.CreateBatchAsync())
+            {
+                var events = EventGenerator.GetSensorEvents(Sensors.DoorSensor, 20);
+                foreach (var sensorEvent in events)
+                {
+                    eventBatch.TryAdd(new Azure.Messaging.EventHubs.EventData(JsonSerializer.Serialize(sensorEvent)));
+                }
+                await producer.SendAsync(eventBatch);
+                Console.WriteLine("Batch data sent");
+            }
+
+            await Task.Delay(5000);
+        }
     }
 }
