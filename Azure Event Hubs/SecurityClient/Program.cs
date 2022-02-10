@@ -46,9 +46,6 @@ async Task StartEventGenerating()
                 await producer.SendAsync(eventBatch);
             }
             eventBatch.Dispose();
-
-
-            await Task.Delay(5000);
         }
     }
 }
