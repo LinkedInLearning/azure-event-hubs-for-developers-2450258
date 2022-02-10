@@ -16,7 +16,7 @@ namespace EventConsumerClient
         ConcurrentDictionary<string, int> partitionEventCount = new ConcurrentDictionary<string, int>();
         public async Task StartEventProcessing(CancellationToken cToken)
         {
-            string consumerGroup = EventHubConsumerClient.DefaultConsumerGroupName;
+            string consumerGroup = "archiving";
             var storageClient = new BlobContainerClient(
                 "DefaultEndpointsProtocol=https;AccountName=checkpointstorecourse;AccountKey=i5wNbxBTSXyVnvBZRvCTajDlpdKnCNiEZl2p6UlrjbdicRBC/AVsiNW1mdQEo+4iwbscemSUEh1y+ASt0+PW/w==;EndpointSuffix=core.windows.net",
                 "sensorlogcheckpoint");
@@ -65,11 +65,7 @@ namespace EventConsumerClient
                    addValue: 1,
                    updateValueFactory: (_, currentCount) => currentCount + 1);
                 Console.WriteLine($"Events since last checkpoint: {eventsSinceLastCheckpoint}");
-                if (eventsSinceLastCheckpoint >= 50)
-                {
-                    await args.UpdateCheckpointAsync();
-                    partitionEventCount[partition] = 0;
-                }
+                await args.UpdateCheckpointAsync();
 
             }
             catch
