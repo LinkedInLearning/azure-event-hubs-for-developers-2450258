@@ -1,5 +1,6 @@
 ﻿using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Consumer;
+using Azure.Messaging.EventHubs.Processor;
 using Azure.Storage.Blobs;
 using System;
 using System.Collections.Generic;
@@ -12,18 +13,67 @@ namespace EventConsumerClient
     public class EventProcessor
     {
 
-        public async Task StartEventProcessing()
+        public async Task StartEventProcessing(CancellationToken cToken)
         {
             string consumerGroup = EventHubConsumerClient.DefaultConsumerGroupName;
             var storageClient = new BlobContainerClient(
-                "Stroage_Connection_String",
-                "blob_container_name");
+                "DefaultEndpointsProtocol=https;AccountName=checkpointstorecourse;AccountKey=i5wNbxBTSXyVnvBZRvCTajDlpdKnCNiEZl2p6UlrjbdicRBC/AVsiNW1mdQEo+4iwbscemSUEh1y+ASt0+PW/w==;EndpointSuffix=core.windows.net",
+                "sensorlogcheckpoint");
 
-            var eventHubsConnectionString = "event_hub_connection_string";
-            var eventHubName = "event_hub_name";
+            var eventHubsConnectionString = "Endpoint=sb://eventhubcourse.servicebus.windows.net/;SharedAccessKeyName=sensorloglistener;SharedAccessKey=JSmXqQYhecKPZIIZgqYUvMQaxFPozmBEwLj4YyJw9+s=";
+            var eventHubName = "sensordata";
 
             var processor = new EventProcessorClient(storageClient,consumerGroup,eventHubsConnectionString,eventHubName);
 
+            processor.ProcessEventAsync += HandleEventProcessing;
+            processor.ProcessErrorAsync += HandleEventError;
+
+            try
+            {
+                await processor.StartProcessingAsync(cToken);
+                await Task.Delay(Timeout.Infinite, cToken);
+            }
+            catch
+            {
+                //log errors
+            }
+            finally
+            {
+                await processor.StopProcessingAsync();
+                processor.ProcessEventAsync -= HandleEventProcessing;
+                processor.ProcessErrorAsync -= HandleEventError;
+            }
+
+        }
+        async Task HandleEventProcessing(ProcessEventArgs args)
+        {
+            try
+            {
+                if (args.CancellationToken.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                string partition = args.Partition.PartitionId;
+                byte[] eventBody = args.Data.EventBody.ToArray();
+
+                Console.WriteLine($"Event Body: {System.Text.Encoding.Default.GetString(eventBody)}");
+
+
+            }
+            catch
+            {
+
+            }
+        }
+
+        Task HandleEventError(ProcessErrorEventArgs args)
+        {
+            Console.WriteLine("Error in the EventProcessorClient");
+            Console.WriteLine($"\tOperation: { args.Operation }");
+            Console.WriteLine($"\tException: { args.Exception }");
+            Console.WriteLine("");
+            return Task.CompletedTask;
         }
     }
 }
