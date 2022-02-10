@@ -1,7 +1,2 @@
-﻿
-
-using EventConsumerClient;
-
-var processor = new EventProcessor();
-await processor.StartEventProcessing(CancellationToken.None);
+﻿// See https://aka.ms/new-console-template for more information
 Console.WriteLine("Hello, World!");
