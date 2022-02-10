@@ -3,6 +3,7 @@ using Azure.Messaging.EventHubs.Consumer;
 using Azure.Messaging.EventHubs.Processor;
 using Azure.Storage.Blobs;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -12,7 +13,7 @@ namespace EventConsumerClient
 {
     public class EventProcessor
     {
-
+        ConcurrentDictionary<string, int> partitionEventCount = new ConcurrentDictionary<string, int>();
         public async Task StartEventProcessing(CancellationToken cToken)
         {
             string consumerGroup = EventHubConsumerClient.DefaultConsumerGroupName;
@@ -57,8 +58,18 @@ namespace EventConsumerClient
                 string partition = args.Partition.PartitionId;
                 byte[] eventBody = args.Data.EventBody.ToArray();
 
-                Console.WriteLine($"Event Body: {System.Text.Encoding.Default.GetString(eventBody)}");
-
+               
+               
+                int eventsSinceLastCheckpoint = partitionEventCount.AddOrUpdate(
+                   key: partition,
+                   addValue: 1,
+                   updateValueFactory: (_, currentCount) => currentCount + 1);
+                Console.WriteLine($"Events since last checkpoint: {eventsSinceLastCheckpoint}");
+                if (eventsSinceLastCheckpoint >= 50)
+                {
+                    await args.UpdateCheckpointAsync();
+                    partitionEventCount[partition] = 0;
+                }
 
             }
             catch
