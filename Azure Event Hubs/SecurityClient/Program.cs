@@ -17,31 +17,34 @@ async Task StartEventGenerating()
     {
         while (true)
         {
-            var eventBatch = await producer.CreateBatchAsync();
+
             var events = EventGenerator.GetSensorEvents(Sensors.DoorSensor, 900);
+
+            var eventBatch = await producer.CreateBatchAsync();
+
             foreach (var sensorEvent in events)
             {
-                var isSuccessfullyAdded = eventBatch.TryAdd(new Azure.Messaging.EventHubs.EventData(JsonSerializer.Serialize(sensorEvent)));
-                if (!isSuccessfullyAdded)
+                var eventAddedSuccessully = eventBatch.TryAdd(new Azure.Messaging.EventHubs.EventData(JsonSerializer.Serialize(sensorEvent)));
+                if (!eventAddedSuccessully)
                 {
                     if (eventBatch.Count > 0)
                     {
                         await producer.SendAsync(eventBatch);
-                        Console.WriteLine($"Batch data sent with total batch amount of {eventBatch.Count}");
+                        Console.WriteLine($"Batch data sent for {eventBatch.Count} events out of {events.Count()} events because size limit reached");
                         eventBatch = await producer.CreateBatchAsync();
+
                     }
                     else
                     {
-                        //log event that failed
+                        // event size is too big and cannot be added. Event needs to be skipped
+                        //log the error
                     }
                 }
             }
-
-            if (eventBatch.Count > 0)
+            if(eventBatch.Count > 0)
             {
                 await producer.SendAsync(eventBatch);
             }
-
             eventBatch.Dispose();
 
 
