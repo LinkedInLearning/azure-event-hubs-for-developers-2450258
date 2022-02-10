@@ -22,7 +22,7 @@ namespace EventGeneratorLibrary
                     Priority = 1,
                     AccountId = Guid.NewGuid(),
                     TimeStamp = DateTime.UtcNow,
-                    SensorMessage="Message received from sensor"
+                    SensorMessage = "Message received from sensor"
 
                 };
             }
