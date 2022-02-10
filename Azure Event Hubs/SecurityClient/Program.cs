@@ -17,16 +17,33 @@ async Task StartEventGenerating()
     {
         while (true)
         {
-            using (var eventBatch = await producer.CreateBatchAsync())
+            var eventBatch = await producer.CreateBatchAsync();
+            var events = EventGenerator.GetSensorEvents(Sensors.DoorSensor, 900);
+            foreach (var sensorEvent in events)
             {
-                var events = EventGenerator.GetSensorEvents(Sensors.DoorSensor, 20);
-                foreach (var sensorEvent in events)
+                var isSuccessfullyAdded = eventBatch.TryAdd(new Azure.Messaging.EventHubs.EventData(JsonSerializer.Serialize(sensorEvent)));
+                if (!isSuccessfullyAdded)
                 {
-                    eventBatch.TryAdd(new Azure.Messaging.EventHubs.EventData(JsonSerializer.Serialize(sensorEvent)));
+                    if (eventBatch.Count > 0)
+                    {
+                        await producer.SendAsync(eventBatch);
+                        Console.WriteLine($"Batch data sent with total batch amount of {eventBatch.Count}");
+                        eventBatch = await producer.CreateBatchAsync();
+                    }
+                    else
+                    {
+                        //log event that failed
+                    }
                 }
-                await producer.SendAsync(eventBatch);
-                Console.WriteLine("Batch data sent");
             }
+
+            if (eventBatch.Count > 0)
+            {
+                await producer.SendAsync(eventBatch);
+            }
+
+            eventBatch.Dispose();
+
 
             await Task.Delay(5000);
         }

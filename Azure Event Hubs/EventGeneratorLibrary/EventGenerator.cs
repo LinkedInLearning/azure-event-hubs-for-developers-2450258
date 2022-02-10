@@ -1,4 +1,5 @@
-﻿using System;
+﻿using EventGeneratorLibrary.Enums;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -22,10 +23,13 @@ namespace EventGeneratorLibrary
                     Priority = 1,
                     AccountId = Guid.NewGuid(),
                     TimeStamp = DateTime.UtcNow,
-                    SensorMessage = "Message received from sensor"
+                    SensorMessage = new string('*', 10000)
 
                 };
             }
         }
+
+
+       
     }
 }
